@@ -249,21 +249,22 @@ if submit_button and question:
                     messages = client.beta.threads.messages.list(thread_id=thread.id)
                     assistant_message = messages.data[0].content[0].text.value
 
-                # Alle Status-Meldungen entfernen
-                status_container.empty()
-
                 # Antwort anzeigen
                 message_placeholder.markdown(assistant_message)
 
-                # Füge die Antwort zur Historie hinzu
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": assistant_message
-                })
+                # Füge die Antwort zur Historie hinzu, falls nicht bereits vorhanden
+                if not any(msg['content'] == assistant_message for msg in st.session_state.messages):
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": assistant_message
+                    })
 
-                # Erfolgsmeldung mit Verarbeitungszeit
-                st.caption(f"✅ Antwort in {elapsed_time:.1f} Sekunden generiert")
-
+                # Quellen anzeigen
+                if "sources" in messages.data[0].content[0]:
+                    sources = messages.data[0].content[0].sources
+                    st.markdown("### Quellen")
+                    for source in sources:
+                        st.markdown(f"- [{source['title']}]({source['url']})")
             else:
                 # Fehlerbehandlung für fehlgeschlagene Runs
                 status_container.empty()

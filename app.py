@@ -23,6 +23,9 @@ load_dotenv()
 # Der API-Key wird automatisch aus der Umgebungsvariable OPENAI_API_KEY geladen
 client = OpenAI()
 
+# Define Assistant ID globally
+ASSISTANT_ID = "asst_er72T8D7D8xth2HaM0mjxi5m"  # Hier deine Assistant-ID einfügen
+
 # Konfiguration
 # Lade Assistant-Konfigurationen aus JSON-Datei
 def load_assistant_config():
@@ -172,105 +175,109 @@ if submit_button and question:
     st.session_state.messages.append({"role": "user", "content": question})
     with st.chat_message("user"):
         st.markdown(question)
-    
+
     # Zeige den Assistant-Response Container
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
         status_container = st.container()
-        
+
         try:
             # Hole die Assistant-Konfiguration
             assistant_config = ASSISTANTS[st.session_state.selected_assistant]
             assistant_id = assistant_config["id"]
-            
-            # Detaillierte Status-Updates
-            with status_container:
-                # Phase 1: Thread erstellen
-                with st.spinner("🚀 Neue Konversation wird gestartet..."):
-                    thread = client.beta.threads.create()
-                    st.success("✅ Konversation erfolgreich gestartet")
-                
-                # Phase 2: Nachricht senden
-                with st.spinner("📝 Ihre Frage wird an den Assistenten übermittelt..."):
-                    client.beta.threads.messages.create(
-                        thread_id=thread.id,
-                        role="user",
-                        content=question
-                    )
-                    st.success("✅ Frage erfolgreich übermittelt")
-                
-                # Phase 3: Assistant-Verarbeitung starten
-                with st.spinner(f"🤖 {st.session_state.selected_assistant} wird aktiviert..."):
-                    run = client.beta.threads.runs.create(
-                        thread_id=thread.id,
-                        assistant_id=assistant_id
-                    )
-                    st.success("✅ Assistent wurde aktiviert")
-                
-                # Phase 4: Antwort-Generierung
-                status_placeholder = st.empty()
-                elapsed_time = 0
-                
-                while run.status not in ["completed", "failed", "cancelled", "expired"]:
-                    elapsed_time += 0.5
-                    
-                    # Dynamische Status-Updates basierend auf der verstrichenen Zeit
-                    if elapsed_time < 3:
-                        status_text = "🔍 Assistent analysiert Ihre Frage..."
-                    elif elapsed_time < 8:
-                        status_text = "📚 Relevante Kirchenrechts-Dokumente werden durchsucht..."
-                    elif elapsed_time < 15:
-                        status_text = "✍️ Assistent formuliert eine präzise Antwort..."
-                    else:
-                        status_text = f"⏳ Verarbeitung läuft... ({int(elapsed_time)}s) - Komplexe Anfragen können bis zu 30s dauern"
-                    
-                    status_placeholder.info(status_text)
-                    
-                    time.sleep(0.5)
-                    run = client.beta.threads.runs.retrieve(
-                        thread_id=thread.id,
-                        run_id=run.id
-                    )
-                
-                # Status-Container leeren
-                status_placeholder.empty()
-                
-                # Prüfe ob der Run erfolgreich war
-                if run.status == "completed":
-                    # Phase 5: Antwort abrufen
-                    with st.spinner("💬 Antwort wird abgerufen..."):
-                        messages = client.beta.threads.messages.list(thread_id=thread.id)
-                        assistant_message = messages.data[0].content[0].text.value
-                    
-                    # Alle Status-Meldungen entfernen
-                    status_container.empty()
-                    
-                    # Antwort anzeigen
-                    message_placeholder.markdown(assistant_message)
-                    
-                    # Füge die Antwort zur Historie hinzu
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": assistant_message
-                    })
-                    
-                    # Erfolgsmeldung mit Verarbeitungszeit
-                    st.caption(f"✅ Antwort in {elapsed_time:.1f} Sekunden generiert")
-                    
+
+            # Erstelle die vollständige Chat-Historie für den Assistant
+            full_history = [
+                {"role": message["role"], "content": message["content"]}
+                for message in st.session_state.messages
+            ]
+
+            # Phase 1: Thread erstellen
+            with st.spinner("🚀 Neue Konversation wird gestartet..."):
+                thread = client.beta.threads.create()
+                st.success("✅ Konversation erfolgreich gestartet")
+
+            # Phase 2: Nachricht senden
+            with st.spinner("📝 Ihre Frage wird an den Assistenten übermittelt..."):
+                client.beta.threads.messages.create(
+                    thread_id=thread.id,
+                    role="user",
+                    content=json.dumps(full_history)  # Sende die gesamte Historie als JSON
+                )
+                st.success("✅ Frage erfolgreich übermittelt")
+
+            # Phase 3: Assistant-Verarbeitung starten
+            with st.spinner(f"🤖 {st.session_state.selected_assistant} wird aktiviert..."):
+                run = client.beta.threads.runs.create(
+                    thread_id=thread.id,
+                    assistant_id=assistant_id
+                )
+                st.success("✅ Assistent wurde aktiviert")
+
+            # Phase 4: Antwort-Generierung
+            status_placeholder = st.empty()
+            elapsed_time = 0
+
+            while run.status not in ["completed", "failed", "cancelled", "expired"]:
+                elapsed_time += 0.5
+
+                # Dynamische Status-Updates basierend auf der verstrichenen Zeit
+                if elapsed_time < 3:
+                    status_text = "🔍 Assistent analysiert Ihre Frage..."
+                elif elapsed_time < 8:
+                    status_text = "📚 Relevante Kirchenrechts-Dokumente werden durchsucht..."
+                elif elapsed_time < 15:
+                    status_text = "✍️ Assistent formuliert eine präzise Antwort..."
                 else:
-                    # Fehlerbehandlung für fehlgeschlagene Runs
-                    status_container.empty()
-                    error_msg = f"❌ Der Assistent konnte die Anfrage nicht verarbeiten. Status: {run.status}"
-                    message_placeholder.error(error_msg)
-                    
-                    if run.status == "failed" and run.last_error:
-                        st.error(f"Fehlerdetails: {run.last_error.message}")
-        
+                    status_text = f"⏳ Verarbeitung läuft... ({int(elapsed_time)}s) - Komplexe Anfragen können bis zu 30s dauern"
+
+                status_placeholder.info(status_text)
+
+                time.sleep(0.5)
+                run = client.beta.threads.runs.retrieve(
+                    thread_id=thread.id,
+                    run_id=run.id
+                )
+
+            # Status-Container leeren
+            status_placeholder.empty()
+
+            # Prüfe ob der Run erfolgreich war
+            if run.status == "completed":
+                # Phase 5: Antwort abrufen
+                with st.spinner("💬 Antwort wird abgerufen..."):
+                    messages = client.beta.threads.messages.list(thread_id=thread.id)
+                    assistant_message = messages.data[0].content[0].text.value
+
+                # Alle Status-Meldungen entfernen
+                status_container.empty()
+
+                # Antwort anzeigen
+                message_placeholder.markdown(assistant_message)
+
+                # Füge die Antwort zur Historie hinzu
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": assistant_message
+                })
+
+                # Erfolgsmeldung mit Verarbeitungszeit
+                st.caption(f"✅ Antwort in {elapsed_time:.1f} Sekunden generiert")
+
+            else:
+                # Fehlerbehandlung für fehlgeschlagene Runs
+                status_container.empty()
+                error_msg = f"❌ Der Assistent konnte die Anfrage nicht verarbeiten. Status: {run.status}"
+                message_placeholder.error(error_msg)
+
+                if run.status == "failed" and run.last_error:
+                    st.error(f"Fehlerdetails: {run.last_error.message}")
+
         except Exception as e:
             # Allgemeine Fehlerbehandlung
             error_message = f"❌ Ein Fehler ist aufgetreten: {str(e)}"
             message_placeholder.error(error_message)
-            
+
             # Detaillierte Fehlerhinweise
             with st.expander("🔧 Fehlerdiagnose"):
                 st.write("**Mögliche Ursachen:**")
@@ -335,3 +342,49 @@ st.markdown(
     """, 
     unsafe_allow_html=True
 )
+
+# Live-Datenabruf von kirchenrecht-ekhn.de
+if "live_data_fetched" not in st.session_state:
+    st.session_state.live_data_fetched = False
+
+# Schlüsselwörter für Live-Datenabruf
+LIVE_DATA_KEYWORDS = ["KDO", "KGO", "Besoldung", "Entgelt", "Amtsblätter"]
+
+def should_use_live_data(query):
+    """Prüft, ob die Anfrage Live-Daten erfordert."""
+    return any(keyword.lower() in query.lower() for keyword in LIVE_DATA_KEYWORDS)
+
+# Dynamische Entscheidung zwischen Vector Store und Live-Datenabruf
+if submit_button and question:
+    if should_use_live_data(question):
+        # Live-Datenabruf
+        run = client.beta.threads.runs.create(
+            thread_id=thread.id,
+            assistant_id=ASSISTANTS[st.session_state.selected_assistant]["id"]
+        )
+
+        with st.spinner("Live-Daten werden abgerufen..."):
+            st.info("Ich durchsuche kirchenrecht-ekhn.de")
+            while run.status != "completed":
+                time.sleep(0.5)
+                run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
+
+            if run.status == "completed":
+                live_answer = client.beta.threads.messages.list(thread_id=thread.id).data[0].content[0].text.value
+                st.success(live_answer)
+            else:
+                st.error("Fehler beim Abrufen der Live-Daten.")
+    else:
+        # Vector Store verwenden
+        run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=ASSISTANTS[st.session_state.selected_assistant]["id"])
+
+        with st.spinner("Antwort wird generiert..."):
+            while run.status != "completed":
+                time.sleep(0.5)
+                run = client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
+
+            if run.status == "completed":
+                answer = client.beta.threads.messages.list(thread_id=thread.id).data[0].content[0].text.value
+                st.success(answer)
+            else:
+                st.error("Fehler beim Generieren der Antwort.")

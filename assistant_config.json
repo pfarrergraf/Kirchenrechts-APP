@@ -13,5 +13,10 @@
     "id": "asst_mQnsmuYByizoq1GOZqq2hMPX",
     "description": "Balance zwischen Geschwindigkeit und Qualität",
     "model": "gpt-4-turbo-preview"
+  },
+  "GPT-o3-mini": {
+    "id": "asst_er72T8D7D8xth2HaM0mjxi5m",
+    "description": "Reasoning Model, optimiert für kleinere Aufgaben",
+    "model": "gpt-o3-mini"
   }
 }

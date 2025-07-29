@@ -4,3 +4,5 @@ venv
 .venv
 build/
 dist/
+instructions.md
+instructions2.md

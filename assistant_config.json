@@ -1,0 +1,17 @@
+{
+  "GPT-4o (Standard - Beste Qualität)": {
+    "id": "asst_tBUA0DmXyKQev17op15BQyXi",
+    "description": "Höchste Qualität, umfassende Antworten",
+    "model": "gpt-4o"
+  },
+  "GPT-3.5-Turbo (Schnell)": {
+    "id": "asst_9Q1Mzfcxz0FKoewOkYgQKrzt",
+    "description": "Schnellere Antworten, gute Qualität",
+    "model": "gpt-3.5-turbo"
+  },
+  "GPT-4-Turbo (Ausgewogen)": {
+    "id": "asst_mQnsmuYByizoq1GOZqq2hMPX",
+    "description": "Balance zwischen Geschwindigkeit und Qualität",
+    "model": "gpt-4-turbo-preview"
+  }
+}

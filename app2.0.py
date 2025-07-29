@@ -1,16 +1,15 @@
 """
-app.py - Kirchenrechts-Chat mit OpenAI Assistant
+app2.0.py - Erweiterte Version des Kirchenrechts-Chats mit OpenAI Assistant
 
-Diese Streamlit-Anwendung ermöglicht es Nutzern, kirchenrechtliche Fragen
-an einen spezialisierten OpenAI Assistant zu stellen und präzise Antworten
-mit Paragraphenangaben zu erhalten.
+Diese Streamlit-Anwendung bietet zusätzliche Funktionen und Verbesserungen
+für eine optimierte Benutzererfahrung und erweiterte Funktionalität.
 
-Starten mit: streamlit run app.py
+Starten mit: streamlit run app2.0.py
 """
 
 import streamlit as st
 import time
-import logging # Füge logging hinzu
+import logging
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
@@ -20,18 +19,14 @@ from typing import Optional
 # Lade Umgebungsvariablen aus .env-Datei
 load_dotenv()
 
-# Live-Datenabruf-Logik wurde in den Hauptverarbeitungsblock integriert
-# Der redundante Block wurde entfernt, um doppelte Ausführungen zu verhindern
-
 # Schlüsselwörter für Live-Datenabruf
 LIVE_DATA_KEYWORDS = ["KDO", "KGO", "Besoldung", "Entgelt", "Amtsblätter"]
 
 def should_use_live_data(query):
-    """Prüft, ob die Anfrage Live-Daten erfordert."""
-    return any(keyword.lower() in query.lower() for keyword in LIVE_DATA_KEYWORDS)
+    """Forciert die Nutzung von Live-Daten."""
+    return True
 
 # Initialisiere den OpenAI-Client
-# Der API-Key wird automatisch aus der Umgebungsvariable OPENAI_API_KEY geladen
 client = OpenAI()
 
 # Konfiguriere das Logging
@@ -72,26 +67,12 @@ ASSISTANTS = load_assistant_config()
 # Standard-Assistant (erster in der Liste)
 DEFAULT_ASSISTANT = list(ASSISTANTS.keys())[0] if ASSISTANTS else "GPT-4o (Standard - Beste Qualität)"
 
-# Modell-Informationen
-MODEL_INFO = """
-**Verfügbare Modelle:**
-
-Die App unterstützt verschiedene AI-Modelle über separate Assistants:
-
-- **GPT-4o**: Beste Qualität, umfassende Antworten, längere Verarbeitung
-- **GPT-3.5-Turbo**: Schnellere Antworten, gute Qualität für die meisten Fragen
-- **GPT-4-Turbo**: Balance zwischen Geschwindigkeit und Qualität
-
-**Konfiguration:** Die verfügbaren Modelle werden aus der `assistant_config.json` geladen.
-Neue Assistants können über `create_multi_model_assistants.py` hinzugefügt werden.
-"""
-
 # Seitenkonfiguration
 st.set_page_config(
-    page_title="EKHN Kirchenrechts-Chat",
+    page_title="EKHN Kirchenrechts-Chat 2.0",
     page_icon="🕊️",
-    layout="centered",
-    initial_sidebar_state="collapsed"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # CSS für besseres Styling
@@ -124,8 +105,8 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # Titel der Anwendung
-st.title("🕊️ EKHN Kirchenrechts-Chat")
-st.markdown("*Ihr digitaler Assistent für kirchenrechtliche Fragen*")
+st.title("🕊️ EKHN Kirchenrechts-Chat 2.0")
+st.markdown("*Ihr digitaler Assistent für kirchenrechtliche Fragen - jetzt mit erweiterten Funktionen*")
 
 # Informationsbox
 st.markdown("""
@@ -359,7 +340,16 @@ with st.sidebar:
     
     # Modell-Informationen
     with st.expander("🤖 Über das verwendete Modell"):
-        st.markdown(MODEL_INFO)
+        st.markdown("""
+        **Verfügbare Modelle:**
+
+        - **GPT-4o**: Beste Qualität, umfassende Antworten, längere Verarbeitung
+        - **GPT-3.5-Turbo**: Schnellere Antworten, gute Qualität für die meisten Fragen
+        - **GPT-4-Turbo**: Balance zwischen Geschwindigkeit und Qualität
+
+        **Konfiguration:** Die verfügbaren Modelle werden aus der `assistant_config.json` geladen.
+        Neue Assistants können über `create_multi_model_assistants.py` hinzugefügt werden.
+        """)
     
     # Kosten-Tracker (optional)
     st.subheader("💰 Nutzung")
@@ -384,23 +374,3 @@ st.markdown(
     """, 
     unsafe_allow_html=True
 )
-
-# Initialisiere den OpenAI-Client
-# Der API-Key wird automatisch aus der Umgebungsvariable OPENAI_API_KEY geladen
-client = OpenAI()
-
-# Konfiguriere das Logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# Live-Datenabruf von kirchenrecht-ekhn.de
-if "live_data_fetched" not in st.session_state:
-    st.session_state.live_data_fetched = False
-
-# Schlüsselwörter für Live-Datenabruf
-LIVE_DATA_KEYWORDS = ["KDO", "KGO", "Besoldung", "Entgelt", "Amtsblätter"]
-
-def should_use_live_data(query):
-    """Prüft, ob die Anfrage Live-Daten erfordert."""
-    return any(keyword.lower() in query.lower() for keyword in LIVE_DATA_KEYWORDS)
-
-# Define Assistant ID globally
